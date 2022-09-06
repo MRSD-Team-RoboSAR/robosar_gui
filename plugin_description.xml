@@ -1,0 +1,8 @@
+<library path="lib/librviz_plugin">
+  <class type="rviz_plugin::AddAgentTool"
+         base_class_type="rviz::Tool">
+    <description>
+      A simple tool to add an agent.
+    </description>
+  </class>
+</library>
