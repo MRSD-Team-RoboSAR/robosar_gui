@@ -53,7 +53,7 @@ void AddAgentTool::onInitialize()
 {
   PoseTool::onInitialize();
   arrow_->setColor(1.0f, 0.0f, 1.0f, 1.0f);
-  setName("2D Initial Pose");
+  setName("Add Agent");
   updateTopic();
 }
 
