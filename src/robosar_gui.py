@@ -1,6 +1,8 @@
-from PyQt5 import QtWidgets, uic
 import sys
+import os
+
 import rospy
+from PyQt5 import QtWidgets, uic
 from std_msgs.msg import String, Bool
 from robosar_messages.srv import *
 from robosar_messages.msg import *
@@ -11,9 +13,10 @@ class Ui(QtWidgets.QDialog):
         super(Ui, self).__init__()
         rospy.init_node('robosar_gui')
         self.dummy_pub = rospy.Publisher('dummy_topic', String, queue_size=1)
-        rospy.Subscriber("/robosar_agent_bringup_node/status", Bool, self.get_active_agents)
+        rospy.Subscriber("/robosar_agent_bringup_node/status",
+                         Bool, self.get_active_agents)
         uic.loadUi(
-            '/home/rachelzheng/robosar_ws/src/robosar_gui/src/robosar_gui.ui', self)
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), 'robosar_gui.ui'), self)
         self.agent_active_status = {}
         self.button = self.findChild(
             QtWidgets.QPushButton, 'pushButton')  # Find the button
