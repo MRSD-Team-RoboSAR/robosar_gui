@@ -38,7 +38,7 @@
 #include "add_agent.h"
 
 
-namespace rviz_plugin
+namespace robosar_gui
 {
 AddAgentTool::AddAgentTool()
 {
@@ -88,7 +88,7 @@ void AddAgentTool::onPoseSet(double x, double y, double theta)
   pub_.publish(goal);
 }
 
-} // end namespace rviz_plugin
+} // end namespace robosar_gui
 
 #include <pluginlib/class_list_macros.hpp>
-PLUGINLIB_EXPORT_CLASS(rviz_plugin::AddAgentTool, rviz::Tool)
+PLUGINLIB_EXPORT_CLASS(robosar_gui::AddAgentTool, rviz::Tool)

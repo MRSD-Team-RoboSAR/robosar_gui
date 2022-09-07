@@ -13,7 +13,7 @@ class Ui(QtWidgets.QDialog):
         self.dummy_pub = rospy.Publisher('dummy_topic', String, queue_size=1)
         rospy.Subscriber("/robosar_agent_bringup_node/status", Bool, self.get_active_agents)
         uic.loadUi(
-            '/home/rachelzheng/robosar_ws/src/rviz_plugin/src/robosar_gui.ui', self)
+            '/home/rachelzheng/robosar_ws/src/robosar_gui/src/robosar_gui.ui', self)
         self.agent_active_status = {}
         self.button = self.findChild(
             QtWidgets.QPushButton, 'pushButton')  # Find the button

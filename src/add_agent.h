@@ -45,7 +45,7 @@ class DisplayContext;
 class StringProperty;
 }
 
-namespace rviz_plugin
+namespace robosar_gui
 {
 class AddAgentTool : public rviz::PoseTool
 {
@@ -70,5 +70,5 @@ private:
   rviz::StringProperty* topic_property_;
 };
 
-} // namespace rviz_plugin
+} // namespace robosar_gui
 #endif // ADD_AGENT_TOOL_H

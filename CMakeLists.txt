@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(rviz_plugin)
+project(robosar_gui)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -124,7 +124,7 @@ add_definitions(-DQT_NO_KEYWORDS)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
- LIBRARIES rviz_plugin
+ LIBRARIES robosar_gui
 #  CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
 )
@@ -154,7 +154,7 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/rviz_plugin_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/robosar_gui_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -215,7 +215,7 @@ install(FILES
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_rviz_plugin.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_robosar_gui.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
