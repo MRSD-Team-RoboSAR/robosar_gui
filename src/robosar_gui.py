@@ -20,8 +20,9 @@ class Ui(QtWidgets.QDialog):
         self.agent_active_status = {}
         self.button = self.findChild(
             QtWidgets.QPushButton, 'pushButton')  # Find the button
-        self.agent_status_text = self.findChild(QtWidgets.QLabel, 'label')
+        self.agent_status_dict = {}
         self.button.clicked.connect(self.publish_button_pressed)
+        self.agent_vertical_layout = self.findChild(QtWidgets.QVBoxLayout, 'verticalLayout')
         self.get_active_agents()
 
         self.show()
@@ -40,18 +41,26 @@ class Ui(QtWidgets.QDialog):
                 self.agent_active_status[a] = True
             print("{} agents active".format(len(active_agents)))
             assert len(self.agent_active_status) > 0
-            self.display_active_agents()
+            
         except rospy.ServiceException as e:
             print("Agent status service call failed: %s" % e)
             raise Exception("Agent status service call failed")
 
     def display_active_agents(self):
-        text = ""
         for agent, status in self.agent_active_status.items():
             alive = "alive" if status else "dead"
-            single_agent_txt = agent + ": " + alive + "\n"
-            text += single_agent_txt
-        self.agent_status_text.setText(text)
+            
+            self.agent_status_dict[agent] = QtWidgets.QGroupBox(agent)
+            layout = QtWidgets.QGridLayout()
+            layout.setColumnStretch(0, 4)
+            layout.setColumnStretch(1, 8)
+            layout.addWidget(QtWidgets.QLabel("Status: "), 0, 0)
+            layout.addWidget(QtWidgets.QLabel(alive), 0, 1)
+            layout.addWidget(QtWidgets.QLabel("Battery Level: "), 1, 0)
+            layout.addWidget(QtWidgets.QLabel("Feedback Frequency: "), 2, 0)
+            layout.addWidget(QtWidgets.QLabel("IP: "), 3, 0)
+            self.agent_status_dict[agent].setLayout(layout)
+            self.agent_vertical_layout.addWidget(self.agent_status_dict[agent])
 
     def publish_button_pressed(self):
         # This is executed when the button is pressed
