@@ -3,9 +3,13 @@ import os
 import math
 
 import rospy
-from PyQt5 import QtWidgets
+from cv_bridge import CvBridge
+from PIL import Image as ImagePIL
+from PIL import ImageQt
+from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtCore import QTime, QTimer
 from std_msgs.msg import String, Bool
+from sensor_msgs.msg import Image
 from robosar_messages.srv import *
 from robosar_messages.msg import *
 from output import Ui_Dialog
@@ -27,6 +31,8 @@ class Ui(QtWidgets.QDialog):
         self.ui.setupUi(self)
         rospy.init_node('robosar_gui')
         self.dummy_pub = rospy.Publisher('dummy_topic', String, queue_size=1)
+        self.task_image_label = self.ui.task_image
+        rospy.Subscriber("/task_allocation_image", Image, self.display_task_allocation)
         rospy.Subscriber("/robosar_agent_bringup_node/status",
                          Bool, self.get_active_agents)
         self.agent_active_status = {}
@@ -46,6 +52,16 @@ class Ui(QtWidgets.QDialog):
         self.mission_timer.timeout.connect(self.show_time)
 
         self.show()
+
+    def display_task_allocation(self, msg):
+        print("image received")
+        br = CvBridge()
+        data = br.imgmsg_to_cv2(msg, "rgb8")
+        img = ImagePIL.fromarray(data, mode='RGB')
+        qt_img = ImageQt.ImageQt(img)
+        pixmap = QtGui.QPixmap.fromImage(qt_img)
+        self.task_image_label.setPixmap(pixmap)
+        self.task_image_label.adjustSize()
 
     def show_time(self):
         if self.start:
