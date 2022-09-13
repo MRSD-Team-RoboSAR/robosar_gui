@@ -1,5 +1,4 @@
 import sys
-import os
 import math
 
 import rospy
@@ -7,12 +6,12 @@ from cv_bridge import CvBridge
 from PIL import Image as ImagePIL
 from PIL import ImageQt
 from PyQt5 import QtWidgets, QtGui
-from PyQt5.QtCore import QTime, QTimer
+from PyQt5.QtCore import QTimer
 from std_msgs.msg import String, Bool
 from sensor_msgs.msg import Image
 from robosar_messages.srv import *
 from robosar_messages.msg import *
-from output import Ui_Dialog
+from gui_designer import Ui_Dialog
 
 
 class AgentGroup():
@@ -54,7 +53,6 @@ class Ui(QtWidgets.QDialog):
         self.show()
 
     def display_task_allocation(self, msg):
-        print("image received")
         br = CvBridge()
         data = br.imgmsg_to_cv2(msg, "rgb8")
         img = ImagePIL.fromarray(data, mode='RGB')
@@ -90,7 +88,6 @@ class Ui(QtWidgets.QDialog):
         self.ui.mission_timer_label.setText("00:00")
 
     def get_active_agents(self, msg=None):
-        print("")
         rospy.wait_for_service('/robosar_agent_bringup_node/agent_status')
         try:
             get_status = rospy.ServiceProxy(
@@ -109,7 +106,9 @@ class Ui(QtWidgets.QDialog):
             raise Exception("Agent status service call failed")
 
     def display_active_agents(self):
+        num_active = 0
         for agent, status in self.agent_active_status.items():
+            num_active += 1 if status else 0
             alive = "alive" if status else "dead"
 
             if agent in self.agent_status_dict:
@@ -141,6 +140,7 @@ class Ui(QtWidgets.QDialog):
                 self.agent_status_dict[agent] = agent_group
                 agent_group.group_box.setLayout(layout)
                 self.ui.verticalLayout.addWidget(agent_group.group_box)
+        self.ui.active_agents_label.setText(str(num_active))
 
     def publish_button_pressed(self):
         # This is executed when the button is pressed
