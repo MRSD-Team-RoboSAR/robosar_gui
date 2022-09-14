@@ -2,12 +2,10 @@ import sys
 import math
 
 import rospy
-from cv_bridge import CvBridge
-from PIL import Image as ImagePIL
-from PIL import ImageQt
+from cv_bridge import CvBridge, CvBridgeError
 from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtCore import QTimer
-from std_msgs.msg import String, Bool
+from std_msgs.msg import String, Bool, Int32
 from sensor_msgs.msg import Image
 from robosar_messages.srv import *
 from robosar_messages.msg import *
@@ -28,14 +26,20 @@ class Ui(QtWidgets.QDialog):
         super(Ui, self).__init__()
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
+
+        # init ROS stuff
         rospy.init_node('robosar_gui')
         self.dummy_pub = rospy.Publisher('dummy_topic', String, queue_size=1)
-        self.task_image_label = self.ui.task_image
         rospy.Subscriber("/task_allocation_image", Image, self.display_task_allocation)
         rospy.Subscriber("/robosar_agent_bringup_node/status",
                          Bool, self.get_active_agents)
+        rospy.Subscriber("/tasks_completed", Int32, self.display_task_count)
+
+        # key: agent name, value: Bool
         self.agent_active_status = {}
+        # key: agent name, value: AgentGroup
         self.agent_status_dict = {}
+
         self.start_time = 0.0
         self.elasped_time = 0
         self.start = False
@@ -52,14 +56,22 @@ class Ui(QtWidgets.QDialog):
 
         self.show()
 
+    def display_task_count(self, msg):
+        self.ui.tasks_completed_label.setText(str(msg.data))
+
     def display_task_allocation(self, msg):
-        br = CvBridge()
-        data = br.imgmsg_to_cv2(msg, "rgb8")
-        img = ImagePIL.fromarray(data, mode='RGB')
-        qt_img = ImageQt.ImageQt(img)
-        pixmap = QtGui.QPixmap.fromImage(qt_img)
-        self.task_image_label.setPixmap(pixmap)
-        self.task_image_label.adjustSize()
+        if msg:
+            br = CvBridge()
+            try:
+                data = br.imgmsg_to_cv2(msg, "rgb8")
+                height, width, _ = data.shape
+                bytesPerLine = 3 * width
+                qImg = QtGui.QImage(data.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
+                pixmap = QtGui.QPixmap.fromImage(qImg)
+                self.ui.task_image.setPixmap(pixmap)
+                print("image updated")
+            except CvBridgeError as e:
+                print(e)
 
     def show_time(self):
         if self.start:
