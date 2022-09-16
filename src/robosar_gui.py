@@ -4,12 +4,16 @@ import math
 import rospy
 from cv_bridge import CvBridge, CvBridgeError
 from PyQt5 import QtWidgets, QtGui
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, QSize
 from std_msgs.msg import String, Bool, Int32
 from sensor_msgs.msg import Image
 from robosar_messages.srv import *
 from robosar_messages.msg import *
 from gui_designer import Ui_Dialog
+
+ALIVE = ["ROBOT_STATUS_ACTIVE", "ROBOT_STATUS_INACTIVE"]
+DEAD = ["ROBOT_STATUS_COMM_FAIL",
+        "ROBOT_STATUS_UNREACHABLE", "ROBOT_STATUS_NO_HEARTBEAT"]
 
 
 class AgentGroup():
@@ -21,35 +25,37 @@ class AgentGroup():
         self.feedback_label = None
         self.ip_label = None
 
+
 class Ui(QtWidgets.QDialog):
     def __init__(self):
         super(Ui, self).__init__()
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
-        # init ROS stuff
-        rospy.init_node('robosar_gui')
-        self.dummy_pub = rospy.Publisher('dummy_topic', String, queue_size=1)
-        rospy.Subscriber("/task_allocation_image", Image, self.display_task_allocation)
-        rospy.Subscriber("/robosar_agent_bringup_node/status",
-                         Bool, self.get_active_agents)
-        rospy.Subscriber("/tasks_completed", Int32, self.display_task_count)
-
         # key: agent name, value: Bool
         self.agent_active_status = {}
         # key: agent name, value: AgentGroup
         self.agent_status_dict = {}
 
+        # init ROS stuff
+        rospy.init_node('robosar_gui')
+        rospy.Subscriber("/task_allocation_image", Image,
+                         self.display_task_allocation)
+        rospy.Subscriber("/robosar_agent_bringup_node/status",
+                         Bool, self.get_active_agents)
+        self.get_active_agents()
+        rospy.Subscriber("/robosar_agent_bringup_node/all_agent_status",
+                         agents_status, self.display_agents_status)
+        rospy.Subscriber("/tasks_completed", Int32, self.display_task_count)
+
         self.start_time = 0.0
         self.elasped_time = 0
         self.start = False
-        self.ui.e_stop_button.clicked.connect(self.publish_button_pressed)
         self.ui.start_mission_button.clicked.connect(self.send_mission)
         self.ui.start_timer_button.clicked.connect(self.start_timer)
         self.ui.stop_timer_button.clicked.connect(self.pause_timer)
         self.ui.restart_timer_button.clicked.connect(self.restart_timer)
         self.agent_scroll_area = self.ui.scrollArea
-        self.get_active_agents()
 
         self.mission_timer = QTimer(self)
         self.mission_timer.timeout.connect(self.show_time)
@@ -66,7 +72,8 @@ class Ui(QtWidgets.QDialog):
                 data = br.imgmsg_to_cv2(msg, "rgb8")
                 height, width, _ = data.shape
                 bytesPerLine = 3 * width
-                qImg = QtGui.QImage(data.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
+                qImg = QtGui.QImage(data.data, width, height,
+                                    bytesPerLine, QtGui.QImage.Format_RGB888)
                 pixmap = QtGui.QPixmap.fromImage(qImg)
                 self.ui.task_image.setPixmap(pixmap)
                 print("image updated")
@@ -77,7 +84,7 @@ class Ui(QtWidgets.QDialog):
         if self.start:
             self.elasped_time += 1
             mins = str(math.floor(self.elasped_time/60)).zfill(2)
-            secs = str(round(self.elasped_time%60)).zfill(2)
+            secs = str(round(self.elasped_time % 60)).zfill(2)
             self.ui.mission_timer_label.setText("{}:{}".format(mins, secs))
 
     def send_mission(self):
@@ -111,7 +118,7 @@ class Ui(QtWidgets.QDialog):
             for a in active_agents:
                 self.agent_active_status[a] = True
             print("{} agents active".format(len(active_agents)))
-            assert len(self.agent_active_status) > 0
+            # assert len(self.agent_active_status) > 0
             self.display_active_agents()
         except rospy.ServiceException as e:
             print("Agent status service call failed: %s" % e)
@@ -128,8 +135,10 @@ class Ui(QtWidgets.QDialog):
                 status_label.setText(alive)
             else:
                 agent_group = AgentGroup()
-                agent_group.group_box = QtWidgets.QGroupBox(self.ui.scrollAreaWidgetContents)
+                agent_group.group_box = QtWidgets.QGroupBox(
+                    self.ui.scrollAreaWidgetContents)
                 agent_group.group_box.setTitle(agent)
+                agent_group.group_box.setMinimumSize(QSize(300, 100))
                 layout = QtWidgets.QGridLayout()
                 agent_group.grid_layout = layout
                 layout.setObjectName("{}_grid_layout".format(agent))
@@ -154,12 +163,34 @@ class Ui(QtWidgets.QDialog):
                 self.ui.verticalLayout.addWidget(agent_group.group_box)
         self.ui.active_agents_label.setText(str(num_active))
 
-    def publish_button_pressed(self):
-        # This is executed when the button is pressed
-        print('publish_button_pressed')
-        stuff = String()
-        stuff.data = "hello"
-        self.dummy_pub.publish(stuff)
+    def display_agents_status(self, msg):
+        num_active = 0
+        for i in range(len(msg.robot_id)):
+            agent = msg.robot_id[i]
+            status = msg.status[i]
+            splitted = status.split("_")
+            status_short = '_'.join(splitted[2:])
+            print("{}, {}".format(agent, status))
+
+            if status in ALIVE:
+                num_active += 1
+                if agent in self.agent_status_dict:
+                    agent_group = self.agent_status_dict[agent]
+                    agent_group.group_box.setStyleSheet(
+                        "QGroupBox {background-color: white;}")
+                    agent_group.status_label.setText(status_short)
+                    agent_group.battery_label.setText(str(msg.battery_lvl[i]))
+                    agent_group.feedback_label.setText(
+                        str(msg.feedback_freq[i]))
+            else:
+                if agent in self.agent_status_dict:
+                    agent_group = self.agent_status_dict[agent]
+                    agent_group.group_box.setStyleSheet(
+                        "QGroupBox {background-color: grey;}")
+                    agent_group.status_label.setText(status_short)
+                    agent_group.battery_label.setText("")
+                    agent_group.feedback_label.setText("")
+            self.ui.active_agents_label.setText(str(num_active))
 
 
 if __name__ == "__main__":
