@@ -76,7 +76,6 @@ class Ui(QtWidgets.QDialog):
                                     bytesPerLine, QtGui.QImage.Format_RGB888)
                 pixmap = QtGui.QPixmap.fromImage(qImg)
                 self.ui.task_image.setPixmap(pixmap)
-                print("image updated")
             except CvBridgeError as e:
                 print(e)
 
@@ -107,6 +106,7 @@ class Ui(QtWidgets.QDialog):
         self.ui.mission_timer_label.setText("00:00")
 
     def get_active_agents(self, msg=None):
+        print("Waiting for agent_status service ...")
         rospy.wait_for_service('/robosar_agent_bringup_node/agent_status')
         try:
             get_status = rospy.ServiceProxy(
@@ -118,7 +118,6 @@ class Ui(QtWidgets.QDialog):
             for a in active_agents:
                 self.agent_active_status[a] = True
             print("{} agents active".format(len(active_agents)))
-            # assert len(self.agent_active_status) > 0
             self.display_active_agents()
         except rospy.ServiceException as e:
             print("Agent status service call failed: %s" % e)
@@ -128,7 +127,7 @@ class Ui(QtWidgets.QDialog):
         num_active = 0
         for agent, status in self.agent_active_status.items():
             num_active += 1 if status else 0
-            alive = "alive" if status else "dead"
+            alive = "ALIVE" if status else "DEAD"
 
             if agent in self.agent_status_dict:
                 status_label = self.agent_status_dict[agent].status_label

@@ -6,8 +6,10 @@
 #
 # WARNING! All changes made in this file will be lost!
 
-
+import os
 from PyQt5 import QtCore, QtGui, QtWidgets
+
+ROOT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', 'img'))
 
 
 class Ui_Dialog(object):
@@ -57,7 +59,7 @@ class Ui_Dialog(object):
         self.label_2.setSizePolicy(sizePolicy)
         self.label_2.setMaximumSize(QtCore.QSize(200, 100))
         self.label_2.setText("")
-        self.label_2.setPixmap(QtGui.QPixmap("src/robosar/robosar_gui/src/../img/robosar_logo_big.png"))
+        self.label_2.setPixmap(QtGui.QPixmap(os.path.join(ROOT_DIR, "robosar_logo_big.png")))
         self.label_2.setScaledContents(True)
         self.label_2.setAlignment(QtCore.Qt.AlignCenter)
         self.label_2.setObjectName("label_2")
@@ -244,7 +246,7 @@ class Ui_Dialog(object):
         self.start_mission_button = QtWidgets.QPushButton(Dialog)
         self.start_mission_button.setMaximumSize(QtCore.QSize(200, 100))
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("src/robosar/robosar_gui/src/../img/k4-detail1.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap(os.path.join(ROOT_DIR, "k4-detail1.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.start_mission_button.setIcon(icon)
         self.start_mission_button.setIconSize(QtCore.QSize(25, 25))
         self.start_mission_button.setObjectName("start_mission_button")
@@ -252,7 +254,7 @@ class Ui_Dialog(object):
         self.e_stop_button = QtWidgets.QPushButton(Dialog)
         self.e_stop_button.setMaximumSize(QtCore.QSize(200, 16777215))
         icon1 = QtGui.QIcon()
-        icon1.addPixmap(QtGui.QPixmap("src/robosar/robosar_gui/src/../img/stop_sign_button.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon1.addPixmap(QtGui.QPixmap(os.path.join(ROOT_DIR, "stop_sign_button.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.e_stop_button.setIcon(icon1)
         self.e_stop_button.setIconSize(QtCore.QSize(25, 25))
         self.e_stop_button.setObjectName("e_stop_button")
@@ -260,7 +262,7 @@ class Ui_Dialog(object):
         self.homing_button = QtWidgets.QPushButton(Dialog)
         self.homing_button.setMaximumSize(QtCore.QSize(200, 16777215))
         icon2 = QtGui.QIcon()
-        icon2.addPixmap(QtGui.QPixmap("src/robosar/robosar_gui/src/../img/avengers__endgame__2019__avengers_logo_png__by_mintmovi3_dd4bz30-fullview.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon2.addPixmap(QtGui.QPixmap(os.path.join(ROOT_DIR, "avengers__endgame__2019__avengers_logo_png__by_mintmovi3_dd4bz30-fullview.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.homing_button.setIcon(icon2)
         self.homing_button.setIconSize(QtCore.QSize(25, 25))
         self.homing_button.setObjectName("homing_button")
