@@ -1,3 +1,14 @@
+# GUI using PyQt5 and ROS
+#
+# This is a GUI for the RoboSARe project. It is written in Python3 and uses PyQt5 for the GUI.
+# It also uses ROS to communicate with the rest of the system.
+#
+# The GUI is split into two parts. The first part is the task allocation image. This is a
+# representation of the task allocation. The second part is the status of the agents. This
+# shows the status of each agent, including the battery level, the IP address, and the
+# feedback from the agent.
+# 
+#  contributor: @githubco-pilot
 import sys
 import math
 
