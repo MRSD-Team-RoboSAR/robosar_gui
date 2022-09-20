@@ -39,6 +39,7 @@ class Ui(QtWidgets.QDialog):
 
         # init ROS stuff
         rospy.init_node('robosar_gui')
+        self.tc_pub = rospy.Publisher('/mission_status', Int32, queue_size=5)
         rospy.Subscriber("/task_allocation_image", Image,
                          self.display_task_allocation)
         rospy.Subscriber("/robosar_agent_bringup_node/status",
@@ -52,6 +53,8 @@ class Ui(QtWidgets.QDialog):
         self.elasped_time = 0
         self.start = False
         self.ui.start_mission_button.clicked.connect(self.send_mission)
+        self.ui.e_stop_button.clicked.connect(self.send_estop)
+        self.ui.homing_button.clicked.connect(self.send_homing)
         self.ui.start_timer_button.clicked.connect(self.start_timer)
         self.ui.stop_timer_button.clicked.connect(self.pause_timer)
         self.ui.restart_timer_button.clicked.connect(self.restart_timer)
@@ -88,11 +91,26 @@ class Ui(QtWidgets.QDialog):
 
     def send_mission(self):
         # publish start mission msg
+        start_msg = Int32()
+        start_msg.data = 1
+        self.tc_pub.publish(start_msg)
 
         # start timer
         self.start_timer()
         self.show_time()
         self.mission_timer.start(1000)
+
+    def send_estop(self):
+        print("sending e-stop command")
+        start_msg = Int32()
+        start_msg.data = 2
+        self.tc_pub.publish(start_msg)
+
+    def send_homing(self):
+        print("sending homing command")
+        start_msg = Int32()
+        start_msg.data = 3
+        self.tc_pub.publish(start_msg)
 
     def start_timer(self):
         self.start = True
