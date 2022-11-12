@@ -210,6 +210,7 @@ class Ui(QtWidgets.QDialog):
                     agent_group.battery_label.setText(str(msg.battery_lvl[i]))
                     agent_group.feedback_label.setText(
                         str(msg.feedback_freq[i]))
+                    agent_group.ip_label.setText(str(msg.ip_adress[i]))
             else:
                 if agent in self.agent_status_dict:
                     agent_group = self.agent_status_dict[agent]
@@ -218,6 +219,7 @@ class Ui(QtWidgets.QDialog):
                     agent_group.status_label.setText(status_short)
                     agent_group.battery_label.setText("")
                     agent_group.feedback_label.setText("")
+                    agent_group.ip_label.setText("")
             self.ui.active_agents_label.setText(str(num_active))
 
 
