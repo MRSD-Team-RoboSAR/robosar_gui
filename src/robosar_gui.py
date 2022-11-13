@@ -22,6 +22,7 @@ from visualization_msgs.msg import Marker
 from robosar_messages.srv import *
 from robosar_messages.msg import *
 from gui_designer import Ui_Dialog
+import threading
 
 ALIVE = ["ROBOT_STATUS_ACTIVE", "ROBOT_STATUS_INACTIVE"]
 DEAD = ["ROBOT_STATUS_COMM_FAIL",
@@ -44,6 +45,7 @@ class Ui(QtWidgets.QDialog):
         super(Ui, self).__init__()
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
+        self.lock = threading.Lock()
 
         # key: agent name, value: Bool
         self.agent_active_status = {}
@@ -97,8 +99,9 @@ class Ui(QtWidgets.QDialog):
         for k,v in self.agent_tag_dict.items():
             total += len(v)
         self.ui.victims_found_label.setText(str(total))
-        if agent in self.agent_status_dict:
-            self.agent_status_dict[agent].victims_label.setText(str(len(self.agent_tag_dict[agent])))
+        with self.lock:
+            if agent in self.agent_status_dict:
+                self.agent_status_dict[agent].victims_label.setText(str(len(self.agent_tag_dict[agent])))
 
 
     def display_task_allocation(self, msg):
@@ -180,40 +183,41 @@ class Ui(QtWidgets.QDialog):
             num_active += 1 if status else 0
             alive = "ALIVE" if status else "DEAD"
 
-            if agent in self.agent_status_dict:
-                status_label = self.agent_status_dict[agent].status_label
-                status_label.setText(alive)
-            else:
-                agent_group = AgentGroup()
-                agent_group.group_box = QtWidgets.QGroupBox(
-                    self.ui.scrollAreaWidgetContents)
-                agent_group.group_box.setTitle(agent)
-                agent_group.group_box.setMinimumSize(QSize(300, 100))
-                layout = QtWidgets.QGridLayout()
-                agent_group.grid_layout = layout
-                layout.setObjectName("{}_grid_layout".format(agent))
-                layout.setColumnStretch(0, 4)
-                layout.setColumnStretch(1, 8)
-                layout.addWidget(QtWidgets.QLabel("Status: "), 0, 0)
-                agent_group.status_label = QtWidgets.QLabel(alive)
-                layout.addWidget(agent_group.status_label, 0, 1)
-                layout.addWidget(QtWidgets.QLabel("Battery Level: "), 1, 0)
-                agent_group.battery_label = QtWidgets.QLabel("0")
-                layout.addWidget(agent_group.battery_label, 1, 1)
-                layout.addWidget(QtWidgets.QLabel(
-                    "Feedback Frequency: "), 2, 0)
-                agent_group.feedback_label = QtWidgets.QLabel("0")
-                layout.addWidget(agent_group.feedback_label, 2, 1)
-                layout.addWidget(QtWidgets.QLabel("IP: "), 3, 0)
-                agent_group.ip_label = QtWidgets.QLabel("192.168.11.1")
-                layout.addWidget(agent_group.ip_label, 3, 1)
-                layout.addWidget(QtWidgets.QLabel("Victims found: "), 4, 0)
-                agent_group.victims_label = QtWidgets.QLabel("0")
-                layout.addWidget(agent_group.victims_label, 4, 1)
+            with self.lock:
+                if agent in self.agent_status_dict:
+                    status_label = self.agent_status_dict[agent].status_label
+                    status_label.setText(alive)
+                else:
+                    agent_group = AgentGroup()
+                    agent_group.group_box = QtWidgets.QGroupBox(
+                        self.ui.scrollAreaWidgetContents)
+                    agent_group.group_box.setTitle(agent)
+                    agent_group.group_box.setMinimumSize(QSize(300, 100))
+                    layout = QtWidgets.QGridLayout()
+                    agent_group.grid_layout = layout
+                    layout.setObjectName("{}_grid_layout".format(agent))
+                    layout.setColumnStretch(0, 4)
+                    layout.setColumnStretch(1, 8)
+                    layout.addWidget(QtWidgets.QLabel("Status: "), 0, 0)
+                    agent_group.status_label = QtWidgets.QLabel(alive)
+                    layout.addWidget(agent_group.status_label, 0, 1)
+                    layout.addWidget(QtWidgets.QLabel("Battery Level: "), 1, 0)
+                    agent_group.battery_label = QtWidgets.QLabel("0")
+                    layout.addWidget(agent_group.battery_label, 1, 1)
+                    layout.addWidget(QtWidgets.QLabel(
+                        "Feedback Frequency: "), 2, 0)
+                    agent_group.feedback_label = QtWidgets.QLabel("0")
+                    layout.addWidget(agent_group.feedback_label, 2, 1)
+                    layout.addWidget(QtWidgets.QLabel("IP: "), 3, 0)
+                    agent_group.ip_label = QtWidgets.QLabel("192.168.11.1")
+                    layout.addWidget(agent_group.ip_label, 3, 1)
+                    layout.addWidget(QtWidgets.QLabel("Victims found: "), 4, 0)
+                    agent_group.victims_label = QtWidgets.QLabel("0")
+                    layout.addWidget(agent_group.victims_label, 4, 1)
 
-                self.agent_status_dict[agent] = agent_group
-                agent_group.group_box.setLayout(layout)
-                self.ui.verticalLayout.addWidget(agent_group.group_box)
+                    self.agent_status_dict[agent] = agent_group
+                    agent_group.group_box.setLayout(layout)
+                    self.ui.verticalLayout.addWidget(agent_group.group_box)
         self.ui.active_agents_label.setText(str(num_active))
 
     def display_agents_status(self, msg):
@@ -225,24 +229,25 @@ class Ui(QtWidgets.QDialog):
             status_short = '_'.join(splitted[2:])
             print("{}, {}".format(agent, status))
 
-            if status in ALIVE:
-                num_active += 1
-                if agent in self.agent_status_dict:
-                    agent_group = self.agent_status_dict[agent]
-                    agent_group.group_box.setStyleSheet(
-                        "QGroupBox {background-color: white;}")
-                    agent_group.status_label.setText(status_short)
-                    agent_group.battery_label.setText(str(msg.battery_lvl[i]))
-                    agent_group.feedback_label.setText(
-                        str(msg.feedback_freq[i]))
-            else:
-                if agent in self.agent_status_dict:
-                    agent_group = self.agent_status_dict[agent]
-                    agent_group.group_box.setStyleSheet(
-                        "QGroupBox {background-color: grey;}")
-                    agent_group.status_label.setText(status_short)
-                    agent_group.battery_label.setText("")
-                    agent_group.feedback_label.setText("")
+            with self.lock:
+                if status in ALIVE:
+                    num_active += 1
+                    if agent in self.agent_status_dict:
+                        agent_group = self.agent_status_dict[agent]
+                        agent_group.group_box.setStyleSheet(
+                            "QGroupBox {background-color: white;}")
+                        agent_group.status_label.setText(status_short)
+                        agent_group.battery_label.setText(str(msg.battery_lvl[i]))
+                        agent_group.feedback_label.setText(
+                            str(msg.feedback_freq[i]))
+                else:
+                    if agent in self.agent_status_dict:
+                        agent_group = self.agent_status_dict[agent]
+                        agent_group.group_box.setStyleSheet(
+                            "QGroupBox {background-color: grey;}")
+                        agent_group.status_label.setText(status_short)
+                        agent_group.battery_label.setText("")
+                        agent_group.feedback_label.setText("")
             self.ui.active_agents_label.setText(str(num_active))
 
 
