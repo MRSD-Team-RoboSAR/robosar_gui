@@ -86,19 +86,19 @@ class Ui(QtWidgets.QDialog):
 
     def update_agent_tag_dict(self, msg):
         # Update dictionary
-        count = 0
-        if msg.ns in self.agent_tag_dict:
-          if msg.id not in self.agent_tag_dict[msg.ns]:
-            self.agent_tag_dict[msg.ns].append(msg.id)
+        agent = msg.ns
+        if agent in self.agent_tag_dict:
+            if msg.id not in self.agent_tag_dict[agent]:
+                self.agent_tag_dict[agent].append(msg.id)
         else:
-          self.agent_tag_dict[msg.ns] = [msg.id]
+            self.agent_tag_dict[agent] = [msg.id]
         # Update statistics
         total = 0
         for k,v in self.agent_tag_dict.items():
-          if k in self.agent_status_dict:
-            self.agent_status_dict[k].num_victims = len(v)
             total += len(v)
         self.ui.victims_found_label.setText(str(total))
+        if agent in self.agent_status_dict:
+            self.agent_status_dict[agent].victims_label.setText(str(len(self.agent_tag_dict[agent])))
 
 
     def display_task_allocation(self, msg):
@@ -207,6 +207,9 @@ class Ui(QtWidgets.QDialog):
                 layout.addWidget(QtWidgets.QLabel("IP: "), 3, 0)
                 agent_group.ip_label = QtWidgets.QLabel("192.168.11.1")
                 layout.addWidget(agent_group.ip_label, 3, 1)
+                layout.addWidget(QtWidgets.QLabel("Victims found: "), 4, 0)
+                agent_group.victims_label = QtWidgets.QLabel("0")
+                layout.addWidget(agent_group.victims_label, 4, 1)
 
                 self.agent_status_dict[agent] = agent_group
                 agent_group.group_box.setLayout(layout)
