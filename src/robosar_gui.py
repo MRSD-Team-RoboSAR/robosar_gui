@@ -18,6 +18,7 @@ from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtCore import QTimer, QSize
 from std_msgs.msg import String, Bool, Int32
 from sensor_msgs.msg import Image
+from visualization_msgs.msg import Marker
 from robosar_messages.srv import *
 from robosar_messages.msg import *
 from gui_designer import Ui_Dialog
@@ -35,6 +36,7 @@ class AgentGroup():
         self.battery_label = None
         self.feedback_label = None
         self.ip_label = None
+        self.num_victims = None
 
 
 class Ui(QtWidgets.QDialog):
@@ -47,6 +49,8 @@ class Ui(QtWidgets.QDialog):
         self.agent_active_status = {}
         # key: agent name, value: AgentGroup
         self.agent_status_dict = {}
+        # key: agent name, value: list of tag IDs
+        self.agent_tag_dict = {}
 
         # init ROS stuff
         rospy.init_node('robosar_gui')
@@ -59,6 +63,7 @@ class Ui(QtWidgets.QDialog):
         rospy.Subscriber("/robosar_agent_bringup_node/all_agent_status",
                          agents_status, self.display_agents_status)
         rospy.Subscriber("/tasks_completed", Int32, self.display_task_count)
+        rospy.Subscriber("/slam_toolbox/victim_markers", Marker, self.update_agent_tag_dict)
 
         self.start_time = 0.0
         self.elasped_time = 0
@@ -78,6 +83,23 @@ class Ui(QtWidgets.QDialog):
 
     def display_task_count(self, msg):
         self.ui.tasks_completed_label.setText(str(msg.data))
+
+    def update_agent_tag_dict(self, msg):
+        # Update dictionary
+        count = 0
+        if msg.ns in self.agent_tag_dict:
+          if msg.id not in self.agent_tag_dict[msg.ns]:
+            self.agent_tag_dict[msg.ns].append(msg.id)
+        else:
+          self.agent_tag_dict[msg.ns] = [msg.id]
+        # Update statistics
+        total = 0
+        for k,v in self.agent_tag_dict.items():
+          if k in self.agent_status_dict:
+            self.agent_status_dict[k].num_victims = len(v)
+            total += len(v)
+        self.ui.victims_found_label.setText(str(total))
+
 
     def display_task_allocation(self, msg):
         if msg:
