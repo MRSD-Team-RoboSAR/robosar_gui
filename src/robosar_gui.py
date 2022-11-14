@@ -278,9 +278,6 @@ class Ui(QtWidgets.QDialog):
                         self.agent_active_status[agent] = False
                         agent_group = self.agent_status_dict[agent]
                         agent_group.status_text = status_short
-                        agent_group.battery_text
-                        agent_group.feedback_text = ""
-                        agent_group.ip_text = ""
         self.n_agents_active = num_active
 
 
