@@ -98,7 +98,6 @@ class Ui(QtWidgets.QDialog):
         self.ui.tasks_completed_label.setText(str(msg.data))
 
     def update_agent_tag_dict(self, msg):
-        print("tag received")
         # Update dictionary
         agent = msg.ns
         if agent in self.agent_tag_dict:
