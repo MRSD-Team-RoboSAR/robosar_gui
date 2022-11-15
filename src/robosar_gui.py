@@ -56,6 +56,7 @@ class Ui(QtWidgets.QDialog):
         self.n_agents_active = 0
         self.n_victims = args.num_victims
         self.tot_victims_found = 0
+        self.seen_tags = set()
         self.life_scores = []
         self.size_policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         self.lock = threading.Lock()
@@ -101,17 +102,17 @@ class Ui(QtWidgets.QDialog):
         # Update dictionary
         agent = msg.ns
         if agent in self.agent_tag_dict:
-            if msg.id not in self.agent_tag_dict[agent]:
+            if msg.id not in self.seen_tags:
+                self.seen_tags.add(msg.id)
                 self.agent_tag_dict[agent].append(msg.id)
                 self.life_scores.append(self.elasped_time)
         else:
-            self.agent_tag_dict[agent] = [msg.id]
-            self.life_scores.append(self.elasped_time)
+            if msg.id not in self.seen_tags:
+                self.seen_tags.add(msg.id)
+                self.agent_tag_dict[agent] = [msg.id]
+                self.life_scores.append(self.elasped_time)
         # Update statistics
-        total = 0
-        for k,v in self.agent_tag_dict.items():
-            total += len(v)
-        self.tot_victims_found = total
+        self.tot_victims_found = len(self.seen_tags)
         with self.lock:
             if agent in self.agent_status_dict:
                 self.agent_status_dict[agent].num_victims_text = str(len(self.agent_tag_dict[agent]))
