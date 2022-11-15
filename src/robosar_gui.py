@@ -114,7 +114,7 @@ class Ui(QtWidgets.QDialog):
         # Update statistics
         self.tot_victims_found = len(self.seen_tags)
         with self.lock:
-            if agent in self.agent_status_dict:
+            if agent in self.agent_status_dict and agent in self.agent_tag_dict:
                 self.agent_status_dict[agent].num_victims_text = str(len(self.agent_tag_dict[agent]))
 
 
