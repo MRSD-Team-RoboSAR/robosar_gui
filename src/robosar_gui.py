@@ -57,6 +57,7 @@ class Ui(QtWidgets.QDialog):
         self.n_victims = args.num_victims
         self.tot_victims_found = 0
         self.life_scores = []
+        self.size_policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         self.lock = threading.Lock()
 
         # key: agent name, value: Bool
@@ -221,7 +222,7 @@ class Ui(QtWidgets.QDialog):
                     agent_group.group_box = QtWidgets.QGroupBox(
                         self.ui.scrollAreaWidgetContents)
                     agent_group.group_box.setTitle(agent)
-                    agent_group.group_box.setMinimumSize(QSize(300, 100))
+                    agent_group.group_box.setMinimumSize(QSize(300, 150))
                     layout = QtWidgets.QGridLayout()
                     agent_group.grid_layout = layout
                     layout.setObjectName("{}_grid_layout".format(agent))
