@@ -112,7 +112,6 @@ class Ui(QtWidgets.QDialog):
         for k,v in self.agent_tag_dict.items():
             total += len(v)
         self.tot_victims_found = total
-        self.ui.victims_found_label.setText(str(self.tot_victims_found))
         with self.lock:
             if agent in self.agent_status_dict:
                 self.agent_status_dict[agent].num_victims_text = str(len(self.agent_tag_dict[agent]))
@@ -151,6 +150,7 @@ class Ui(QtWidgets.QDialog):
             else:
                 agent_group.group_box.setStyleSheet("QGroupBox {background-color: grey;}")
         self.ui.active_agents_label.setText(str(self.n_agents_active))
+        self.ui.victims_found_label.setText(str(self.tot_victims_found))
 
     def send_mission(self):
         # publish start mission msg
