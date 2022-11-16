@@ -9,6 +9,7 @@
 # feedback from the agent.
 # 
 #  contributor: @githubco-pilot
+import argparse
 import sys
 import math
 
@@ -31,13 +32,20 @@ DEAD = ["ROBOT_STATUS_COMM_FAIL",
 
 class AgentGroup():
     def __init__(self) -> None:
+        # PyQT Objects
         self.group_box = None
         self.grid_layout = None
         self.status_label = None
         self.battery_label = None
         self.feedback_label = None
         self.ip_label = None
-        self.num_victims = None
+        self.victims_label = None
+        # content
+        self.status_text = ""
+        self.battery_text = ""
+        self.feedback_text = ""
+        self.ip_text = ""
+        self.num_victims_text = ""
 
 
 class Ui(QtWidgets.QDialog):
@@ -45,6 +53,12 @@ class Ui(QtWidgets.QDialog):
         super(Ui, self).__init__()
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
+        self.n_agents_active = 0
+        self.n_victims = args.num_victims
+        self.tot_victims_found = 0
+        self.seen_tags = set()
+        self.life_scores = []
+        self.size_policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         self.lock = threading.Lock()
 
         # key: agent name, value: Bool
@@ -59,8 +73,6 @@ class Ui(QtWidgets.QDialog):
         self.tc_pub = rospy.Publisher('/system_mission_command', mission_command, queue_size=5)
         rospy.Subscriber("/task_allocation_image", Image,
                          self.display_task_allocation)
-        rospy.Subscriber("/robosar_agent_bringup_node/status",
-                         Bool, self.get_active_agents)
         self.get_active_agents()
         rospy.Subscriber("/robosar_agent_bringup_node/all_agent_status",
                          agents_status, self.display_agents_status)
@@ -90,18 +102,20 @@ class Ui(QtWidgets.QDialog):
         # Update dictionary
         agent = msg.ns
         if agent in self.agent_tag_dict:
-            if msg.id not in self.agent_tag_dict[agent]:
+            if msg.id not in self.seen_tags:
+                self.seen_tags.add(msg.id)
                 self.agent_tag_dict[agent].append(msg.id)
+                self.life_scores.append(self.elasped_time)
         else:
-            self.agent_tag_dict[agent] = [msg.id]
+            if msg.id not in self.seen_tags:
+                self.seen_tags.add(msg.id)
+                self.agent_tag_dict[agent] = [msg.id]
+                self.life_scores.append(self.elasped_time)
         # Update statistics
-        total = 0
-        for k,v in self.agent_tag_dict.items():
-            total += len(v)
-        self.ui.victims_found_label.setText(str(total))
+        self.tot_victims_found = len(self.seen_tags)
         with self.lock:
-            if agent in self.agent_status_dict:
-                self.agent_status_dict[agent].victims_label.setText(str(len(self.agent_tag_dict[agent])))
+            if agent in self.agent_status_dict and agent in self.agent_tag_dict:
+                self.agent_status_dict[agent].num_victims_text = str(len(self.agent_tag_dict[agent]))
 
 
     def display_task_allocation(self, msg):
@@ -124,6 +138,20 @@ class Ui(QtWidgets.QDialog):
             mins = str(math.floor(self.elasped_time/60)).zfill(2)
             secs = str(round(self.elasped_time % 60)).zfill(2)
             self.ui.mission_timer_label.setText("{}:{}".format(mins, secs))
+        # update agent status viz
+        for agent in self.agent_status_dict:
+            agent_group = self.agent_status_dict[agent]
+            agent_group.status_label.setText(agent_group.status_text)
+            agent_group.battery_label.setText(agent_group.battery_text)
+            agent_group.feedback_label.setText(agent_group.feedback_text)
+            agent_group.ip_label.setText(agent_group.ip_text)
+            agent_group.victims_label.setText(agent_group.num_victims_text)
+            if self.agent_active_status[agent]:
+                agent_group.group_box.setStyleSheet("QGroupBox {background-color: white;}")
+            else:
+                agent_group.group_box.setStyleSheet("QGroupBox {background-color: grey;}")
+        self.ui.active_agents_label.setText(str(self.n_agents_active))
+        self.ui.victims_found_label.setText(str(self.tot_victims_found))
 
     def send_mission(self):
         # publish start mission msg
@@ -138,6 +166,9 @@ class Ui(QtWidgets.QDialog):
 
     def send_estop(self):
         print("sending e-stop command")
+        print("{}/{} victims found".format(self.tot_victims_found, self.n_victims))
+        print("time taken to find: ", self.life_scores)
+        print("total score: ", sum(self.life_scores))
         start_msg = mission_command()
         start_msg.data = mission_command.STOP
         self.tc_pub.publish(start_msg)
@@ -185,39 +216,44 @@ class Ui(QtWidgets.QDialog):
 
             with self.lock:
                 if agent in self.agent_status_dict:
-                    status_label = self.agent_status_dict[agent].status_label
-                    status_label.setText(alive)
+                    self.agent_status_dict[agent].status_text = alive
                 else:
                     agent_group = AgentGroup()
                     agent_group.group_box = QtWidgets.QGroupBox(
                         self.ui.scrollAreaWidgetContents)
                     agent_group.group_box.setTitle(agent)
-                    agent_group.group_box.setMinimumSize(QSize(300, 100))
+                    agent_group.group_box.setMinimumSize(QSize(300, 150))
                     layout = QtWidgets.QGridLayout()
                     agent_group.grid_layout = layout
                     layout.setObjectName("{}_grid_layout".format(agent))
                     layout.setColumnStretch(0, 4)
                     layout.setColumnStretch(1, 8)
                     layout.addWidget(QtWidgets.QLabel("Status: "), 0, 0)
-                    agent_group.status_label = QtWidgets.QLabel(alive)
+                    agent_group.status_text = alive
+                    agent_group.status_label = QtWidgets.QLabel(agent_group.status_text)
                     layout.addWidget(agent_group.status_label, 0, 1)
                     layout.addWidget(QtWidgets.QLabel("Battery Level: "), 1, 0)
-                    agent_group.battery_label = QtWidgets.QLabel("0")
+                    agent_group.battery_text = "0"
+                    agent_group.battery_label = QtWidgets.QLabel(agent_group.battery_text)
                     layout.addWidget(agent_group.battery_label, 1, 1)
                     layout.addWidget(QtWidgets.QLabel(
                         "Feedback Frequency: "), 2, 0)
-                    agent_group.feedback_label = QtWidgets.QLabel("0")
+                    agent_group.feedback_text = "0"
+                    agent_group.feedback_label = QtWidgets.QLabel(agent_group.feedback_text)
                     layout.addWidget(agent_group.feedback_label, 2, 1)
                     layout.addWidget(QtWidgets.QLabel("IP: "), 3, 0)
-                    agent_group.ip_label = QtWidgets.QLabel("192.168.11.1")
+                    agent_group.ip_text = "192.168.11.1"
+                    agent_group.ip_label = QtWidgets.QLabel(agent_group.ip_text)
                     layout.addWidget(agent_group.ip_label, 3, 1)
                     layout.addWidget(QtWidgets.QLabel("Victims found: "), 4, 0)
-                    agent_group.victims_label = QtWidgets.QLabel("0")
+                    agent_group.num_victims_text = "0"
+                    agent_group.victims_label = QtWidgets.QLabel(agent_group.num_victims_text)
                     layout.addWidget(agent_group.victims_label, 4, 1)
 
                     self.agent_status_dict[agent] = agent_group
                     agent_group.group_box.setLayout(layout)
                     self.ui.verticalLayout.addWidget(agent_group.group_box)
+        
         self.ui.active_agents_label.setText(str(num_active))
 
     def display_agents_status(self, msg):
@@ -227,33 +263,35 @@ class Ui(QtWidgets.QDialog):
             status = msg.status[i]
             splitted = status.split("_")
             status_short = '_'.join(splitted[2:])
-            print("{}, {}".format(agent, status))
 
             with self.lock:
                 if status in ALIVE:
                     num_active += 1
                     if agent in self.agent_status_dict:
+                        self.agent_active_status[agent] = True
                         agent_group = self.agent_status_dict[agent]
-                        agent_group.group_box.setStyleSheet(
-                            "QGroupBox {background-color: white;}")
-                        agent_group.status_label.setText(status_short)
-                        agent_group.battery_label.setText(str(msg.battery_lvl[i]))
-                        agent_group.feedback_label.setText(
-                            str(msg.feedback_freq[i]))
-                        agent_group.ip_label.setText(str(msg.ip_adress[i]))
+                        agent_group.status_text = status_short
+                        agent_group.battery_text = str(msg.battery_lvl[i])
+                        agent_group.feedback_text = str(msg.feedback_freq[i])
+                        agent_group.ip_text = str(msg.ip_adress[i])
                 else:
                     if agent in self.agent_status_dict:
+                        self.agent_active_status[agent] = False
                         agent_group = self.agent_status_dict[agent]
-                        agent_group.group_box.setStyleSheet(
-                            "QGroupBox {background-color: grey;}")
-                        agent_group.status_label.setText(status_short)
-                        agent_group.battery_label.setText("")
-                        agent_group.feedback_label.setText("")
-                        agent_group.ip_label.setText("")
-            self.ui.active_agents_label.setText(str(num_active))
+                        agent_group.status_text = status_short
+        self.n_agents_active = num_active
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-n",
+        "--num_victims",
+        help="number of victims",
+        type=int,
+        default=0,
+    )
+    args = parser.parse_args()
     app = QtWidgets.QApplication(sys.argv)
     window = Ui()
     app.exec_()
