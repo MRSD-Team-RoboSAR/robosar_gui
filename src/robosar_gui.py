@@ -17,7 +17,7 @@ import rospy
 from cv_bridge import CvBridge, CvBridgeError
 from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtCore import QTimer, QSize
-from std_msgs.msg import String, Bool, Int32
+from std_msgs.msg import String, Bool, Float32
 from sensor_msgs.msg import Image
 from visualization_msgs.msg import Marker
 from robosar_messages.srv import *
@@ -58,6 +58,7 @@ class Ui(QtWidgets.QDialog):
         self.tot_victims_found = 0
         self.seen_tags = set()
         self.life_scores = []
+        self.percent_explored = 0.0
         self.size_policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         self.lock = threading.Lock()
 
@@ -76,7 +77,7 @@ class Ui(QtWidgets.QDialog):
         self.get_active_agents()
         rospy.Subscriber("/robosar_agent_bringup_node/all_agent_status",
                          agents_status, self.display_agents_status)
-        rospy.Subscriber("/tasks_completed", Int32, self.display_task_count)
+        rospy.Subscriber("/percent_completed", Float32, self.display_area_explored)
         rospy.Subscriber("/slam_toolbox/victim_markers", Marker, self.update_agent_tag_dict)
 
         self.start_time = 0.0
@@ -95,8 +96,8 @@ class Ui(QtWidgets.QDialog):
 
         self.show()
 
-    def display_task_count(self, msg):
-        self.ui.tasks_completed_label.setText(str(msg.data))
+    def display_area_explored(self, msg):
+        self.percent_explored = round(msg.data, 2)
 
     def update_agent_tag_dict(self, msg):
         # Update dictionary
@@ -152,6 +153,7 @@ class Ui(QtWidgets.QDialog):
                 agent_group.group_box.setStyleSheet("QGroupBox {background-color: grey;}")
         self.ui.active_agents_label.setText(str(self.n_agents_active))
         self.ui.victims_found_label.setText(str(self.tot_victims_found))
+        self.ui.area_explored_label.setText(str(self.percent_explored))
 
     def send_mission(self):
         # publish start mission msg
