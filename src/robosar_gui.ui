@@ -227,14 +227,14 @@
           </size>
          </property>
          <property name="title">
-          <string>Tasks Completed</string>
+          <string>% Area Explored</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>
          </property>
          <layout class="QHBoxLayout" name="horizontalLayout_6">
           <item>
-           <widget class="QLabel" name="tasks_completed_label">
+           <widget class="QLabel" name="area_explored_label">
             <property name="maximumSize">
              <size>
               <width>50</width>
