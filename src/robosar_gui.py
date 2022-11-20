@@ -23,6 +23,8 @@ from visualization_msgs.msg import Marker
 from robosar_messages.srv import *
 from robosar_messages.msg import *
 from gui_designer import Ui_Dialog
+from apriltag_ros.msg import AprilTagDetectionArray
+from apriltag_ros.msg import AprilTagDetection
 import threading
 
 ALIVE = ["ROBOT_STATUS_ACTIVE", "ROBOT_STATUS_INACTIVE"]
@@ -78,8 +80,14 @@ class Ui(QtWidgets.QDialog):
         rospy.Subscriber("/robosar_agent_bringup_node/all_agent_status",
                          agents_status, self.display_agents_status)
         rospy.Subscriber("/percent_completed", Float32, self.display_area_explored)
-        rospy.Subscriber("/slam_toolbox/victim_markers", Marker, self.update_agent_tag_dict)
-
+        # rospy.Subscriber("/slam_toolbox/victim_markers", Marker, self.update_agent_tag_dict)
+        # initialize a subscriber for every agent_id/feedback/apriltag topic
+        for agent in self.agent_status_dict:
+            if self.agent_active_status[agent]:
+                rospy.Subscriber("/robosar_agent_bringup_node/",agent,"/feedback/apriltag", apriltag_ros/AprilTagDetectionArray, self.update_agent_tag_dict(apriltag_ros/AprilTagDetectionArray, agent))
+        # rospy.Subscriber("/robosar_agent_bringup_node/agent_1/feedback/apriltag", apriltag_ros/AprilTagDetectionArray, self.update_agent_tag_dict)
+        
+        
         self.start_time = 0.0
         self.elasped_time = 0
         self.start = False
@@ -99,24 +107,46 @@ class Ui(QtWidgets.QDialog):
     def display_area_explored(self, msg):
         self.percent_explored = round(msg.data, 2)
 
-    def update_agent_tag_dict(self, msg):
+    # def update_agent_tag_dict(self, msg):
+    #     # Update dictionary
+    #     agent = msg.ns
+    #     if agent in self.agent_tag_dict:
+    #         if msg.id not in self.seen_tags:
+    #             self.seen_tags.add(msg.id)
+    #             self.agent_tag_dict[agent].append(msg.id)
+    #             self.life_scores.append(self.elasped_time)
+    #     else:
+    #         if msg.id not in self.seen_tags:
+    #             self.seen_tags.add(msg.id)
+    #             self.agent_tag_dict[agent] = [msg.id]
+    #             self.life_scores.append(self.elasped_time)
+    #     # Update statistics
+    #     self.tot_victims_found = len(self.seen_tags)
+    #     with self.lock:
+    #         if agent in self.agent_status_dict and agent in self.agent_tag_dict:
+    #             self.agent_status_dict[agent].num_victims_text = str(len(self.agent_tag_dict[agent]))
+    
+
+    # update_agent_tag_dict = lambda msg, agent_id: 
+    def update_agent_tag_dict(msg, agent_id) :
+        return lambda self, msg, agent_id: self.update_agent_tag_dict_helper(msg, agent_id)
         # Update dictionary
-        agent = msg.ns
-        if agent in self.agent_tag_dict:
+    def update_agent_tag_dict_helper(self, msg, agent_id):
+        if agent_id in self.agent_tag_dict:
             if msg.id not in self.seen_tags:
                 self.seen_tags.add(msg.id)
-                self.agent_tag_dict[agent].append(msg.id)
+                self.agent_tag_dict[agent_id].append(msg.id)
                 self.life_scores.append(self.elasped_time)
         else:
             if msg.id not in self.seen_tags:
                 self.seen_tags.add(msg.id)
-                self.agent_tag_dict[agent] = [msg.id]
+                self.agent_tag_dict[agent_id] = [msg.id]
                 self.life_scores.append(self.elasped_time)
         # Update statistics
         self.tot_victims_found = len(self.seen_tags)
         with self.lock:
-            if agent in self.agent_status_dict and agent in self.agent_tag_dict:
-                self.agent_status_dict[agent].num_victims_text = str(len(self.agent_tag_dict[agent]))
+            if agent_id in self.agent_status_dict and agent in self.agent_tag_dict:
+                self.agent_status_dict[agent_id].num_victims_text = str(len(self.agent_tag_dict[agent_id]))
 
 
     def display_task_allocation(self, msg):
