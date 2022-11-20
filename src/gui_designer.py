@@ -301,7 +301,7 @@ class Ui_Dialog(object):
         self.area_explored_label.setText(_translate("Dialog", "0"))
         self.groupBox_6.setTitle(_translate("Dialog", "Victims Found"))
         self.victims_found_label.setText(_translate("Dialog", "0"))
-        self.groupBox_7.setTitle(_translate("Dialog", "Sum of Time"))
+        self.groupBox_7.setTitle(_translate("Dialog", "Sum of Search Times"))
         self.life_score_label.setText(_translate("Dialog", "0"))
         self.groupBox_2.setTitle(_translate("Dialog", "Agent Status"))
         self.groupBox.setTitle(_translate("Dialog", "Task Allocation"))
