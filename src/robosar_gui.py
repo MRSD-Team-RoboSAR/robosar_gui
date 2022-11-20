@@ -154,6 +154,7 @@ class Ui(QtWidgets.QDialog):
         self.ui.active_agents_label.setText(str(self.n_agents_active))
         self.ui.victims_found_label.setText(str(self.tot_victims_found))
         self.ui.area_explored_label.setText(str(self.percent_explored))
+        self.ui.life_score_label.setText(str(sum(self.life_scores)))
 
     def send_mission(self):
         # publish start mission msg
