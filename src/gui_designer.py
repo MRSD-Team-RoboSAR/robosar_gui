@@ -147,7 +147,7 @@ class Ui_Dialog(object):
         self.horizontalLayout_8 = QtWidgets.QHBoxLayout(self.groupBox_7)
         self.horizontalLayout_8.setObjectName("horizontalLayout_8")
         self.life_score_label = QtWidgets.QLabel(self.groupBox_7)
-        self.life_score_label.setMaximumSize(QtCore.QSize(50, 50))
+        self.life_score_label.setMaximumSize(QtCore.QSize(250, 50))
         font = QtGui.QFont()
         font.setPointSize(20)
         self.life_score_label.setFont(font)
