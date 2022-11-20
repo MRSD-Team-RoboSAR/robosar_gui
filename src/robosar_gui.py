@@ -153,7 +153,7 @@ class Ui(QtWidgets.QDialog):
                 agent_group.group_box.setStyleSheet("QGroupBox {background-color: grey;}")
         self.ui.active_agents_label.setText(str(self.n_agents_active))
         self.ui.victims_found_label.setText(str(self.tot_victims_found))
-        self.ui.area_explored_label.setText(str(self.percent_explored))
+        self.ui.area_explored_label.setText(str(int(self.percent_explored*100)))
         self.ui.life_score_label.setText(str(sum(self.life_scores)))
 
     def send_mission(self):
