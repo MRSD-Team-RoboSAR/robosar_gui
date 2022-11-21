@@ -84,7 +84,7 @@ class Ui(QtWidgets.QDialog):
         # initialize a subscriber for every agent_id/feedback/apriltag topic
         for agent in self.agent_status_dict:
             if self.agent_active_status[agent]:
-                rospy.Subscriber("/robosar_agent_bringup_node/",agent,"/feedback/apriltag", apriltag_ros/AprilTagDetectionArray, self.update_agent_tag_dict(apriltag_ros/AprilTagDetectionArray, agent))
+                rospy.Subscriber("/robosar_agent_bringup_node/"+agent+"/feedback/apriltag", AprilTagDetectionArray, lambda msg: self.update_agent_tag_dict_helper(msg, agent))
         # rospy.Subscriber("/robosar_agent_bringup_node/agent_1/feedback/apriltag", apriltag_ros/AprilTagDetectionArray, self.update_agent_tag_dict)
         
         
@@ -127,24 +127,21 @@ class Ui(QtWidgets.QDialog):
     #             self.agent_status_dict[agent].num_victims_text = str(len(self.agent_tag_dict[agent]))
     
 
-    # update_agent_tag_dict = lambda msg, agent_id: 
-    def update_agent_tag_dict(msg, agent_id) :
-        return lambda self, msg, agent_id: self.update_agent_tag_dict_helper(msg, agent_id)
-        # Update dictionary
     def update_agent_tag_dict_helper(self, msg, agent_id):
-        if agent_id in self.agent_tag_dict:
-            if msg.id not in self.seen_tags:
-                self.seen_tags.add(msg.id)
-                self.agent_tag_dict[agent_id].append(msg.id)
-                self.life_scores.append(self.elasped_time)
-        else:
-            if msg.id not in self.seen_tags:
-                self.seen_tags.add(msg.id)
-                self.agent_tag_dict[agent_id] = [msg.id]
-                self.life_scores.append(self.elasped_time)
-        # Update statistics
-        self.tot_victims_found = len(self.seen_tags)
         with self.lock:
+            if agent_id in self.agent_tag_dict:
+                if msg.id not in self.seen_tags:
+                    self.seen_tags.add(msg.id)
+                    self.agent_tag_dict[agent_id].append(msg.id)
+                    self.life_scores.append(self.elasped_time)
+            else:
+                if msg.id not in self.seen_tags:
+                    self.seen_tags.add(msg.id)
+                    self.agent_tag_dict[agent_id] = [msg.id]
+                    self.life_scores.append(self.elasped_time)
+            # Update statistics
+            self.tot_victims_found = len(self.seen_tags)
+            
             if agent_id in self.agent_status_dict and agent in self.agent_tag_dict:
                 self.agent_status_dict[agent_id].num_victims_text = str(len(self.agent_tag_dict[agent_id]))
 
