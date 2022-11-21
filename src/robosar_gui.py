@@ -82,6 +82,7 @@ class Ui(QtWidgets.QDialog):
         rospy.Subscriber("/percent_completed", Float32, self.display_area_explored)
         # rospy.Subscriber("/slam_toolbox/victim_markers", Marker, self.update_agent_tag_dict)
         # initialize a subscriber for every agent_id/feedback/apriltag topic
+        self.elasped_time = 0
         for agent in self.agent_status_dict:
             if self.agent_active_status[agent]:
                 rospy.Subscriber("/robosar_agent_bringup_node/"+agent+"/feedback/apriltag", AprilTagDetectionArray, lambda msg: self.update_agent_tag_dict_helper(msg, agent))
@@ -89,7 +90,6 @@ class Ui(QtWidgets.QDialog):
         
         
         self.start_time = 0.0
-        self.elasped_time = 0
         self.start = False
         self.ui.start_mission_button.clicked.connect(self.send_mission)
         self.ui.e_stop_button.clicked.connect(self.send_estop)
@@ -130,19 +130,19 @@ class Ui(QtWidgets.QDialog):
     def update_agent_tag_dict_helper(self, msg, agent_id):
         with self.lock:
             if agent_id in self.agent_tag_dict:
-                if msg.id not in self.seen_tags:
-                    self.seen_tags.add(msg.id)
-                    self.agent_tag_dict[agent_id].append(msg.id)
+                if msg.detections[0].id not in self.seen_tags:
+                    self.seen_tags.add(msg.detections[0].id)
+                    self.agent_tag_dict[agent_id].append(msg.detections[0].id)
                     self.life_scores.append(self.elasped_time)
             else:
-                if msg.id not in self.seen_tags:
-                    self.seen_tags.add(msg.id)
-                    self.agent_tag_dict[agent_id] = [msg.id]
+                if msg.detections[0].id not in self.seen_tags:
+                    self.seen_tags.add(msg.detections[0].id)
+                    self.agent_tag_dict[agent_id] = [msg.detections[0].id]
                     self.life_scores.append(self.elasped_time)
             # Update statistics
             self.tot_victims_found = len(self.seen_tags)
             
-            if agent_id in self.agent_status_dict and agent in self.agent_tag_dict:
+            if agent_id in self.agent_status_dict and agent_id in self.agent_tag_dict:
                 self.agent_status_dict[agent_id].num_victims_text = str(len(self.agent_tag_dict[agent_id]))
 
 
