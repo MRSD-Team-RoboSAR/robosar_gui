@@ -130,14 +130,14 @@ class Ui(QtWidgets.QDialog):
     def update_agent_tag_dict_helper(self, msg, agent_id):
         with self.lock:
             if agent_id in self.agent_tag_dict:
-                if msg.id not in self.seen_tags:
-                    self.seen_tags.add(msg.id)
-                    self.agent_tag_dict[agent_id].append(msg.id)
+                if msg.detections[0].id not in self.seen_tags:
+                    self.seen_tags.add(msg.detections[0].id)
+                    self.agent_tag_dict[agent_id].append(msg.detections[0].id)
                     self.life_scores.append(self.elasped_time)
             else:
-                if msg.id not in self.seen_tags:
-                    self.seen_tags.add(msg.id)
-                    self.agent_tag_dict[agent_id] = [msg.id]
+                if msg.detections[0].id not in self.seen_tags:
+                    self.seen_tags.add(msg.detections[0].id)
+                    self.agent_tag_dict[agent_id] = [msg.detections[0].id]
                     self.life_scores.append(self.elasped_time)
             # Update statistics
             self.tot_victims_found = len(self.seen_tags)
