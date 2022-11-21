@@ -7,7 +7,7 @@
 # representation of the task allocation. The second part is the status of the agents. This
 # shows the status of each agent, including the battery level, the IP address, and the
 # feedback from the agent.
-# 
+#
 #  contributor: @githubco-pilot
 import argparse
 import sys
@@ -23,14 +23,19 @@ from visualization_msgs.msg import Marker
 from robosar_messages.srv import *
 from robosar_messages.msg import *
 from gui_designer import Ui_Dialog
+from apriltag_ros.msg import AprilTagDetectionArray
+from apriltag_ros.msg import AprilTagDetection
 import threading
 
 ALIVE = ["ROBOT_STATUS_ACTIVE", "ROBOT_STATUS_INACTIVE"]
-DEAD = ["ROBOT_STATUS_COMM_FAIL",
-        "ROBOT_STATUS_UNREACHABLE", "ROBOT_STATUS_NO_HEARTBEAT"]
+DEAD = [
+    "ROBOT_STATUS_COMM_FAIL",
+    "ROBOT_STATUS_UNREACHABLE",
+    "ROBOT_STATUS_NO_HEARTBEAT",
+]
 
 
-class AgentGroup():
+class AgentGroup:
     def __init__(self) -> None:
         # PyQT Objects
         self.group_box = None
@@ -59,7 +64,9 @@ class Ui(QtWidgets.QDialog):
         self.seen_tags = set()
         self.life_scores = []
         self.percent_explored = 0.0
-        self.size_policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        self.size_policy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed
+        )
         self.lock = threading.Lock()
 
         # key: agent name, value: Bool
@@ -70,18 +77,30 @@ class Ui(QtWidgets.QDialog):
         self.agent_tag_dict = {}
 
         # init ROS stuff
-        rospy.init_node('robosar_gui')
-        self.tc_pub = rospy.Publisher('/system_mission_command', mission_command, queue_size=5)
-        rospy.Subscriber("/task_allocation_image", Image,
-                         self.display_task_allocation)
+        rospy.init_node("robosar_gui")
+        self.tc_pub = rospy.Publisher(
+            "/system_mission_command", mission_command, queue_size=5
+        )
+        rospy.Subscriber("/task_allocation_image", Image, self.display_task_allocation)
         self.get_active_agents()
-        rospy.Subscriber("/robosar_agent_bringup_node/all_agent_status",
-                         agents_status, self.display_agents_status)
+        rospy.Subscriber(
+            "/robosar_agent_bringup_node/all_agent_status",
+            agents_status,
+            self.display_agents_status,
+        )
         rospy.Subscriber("/percent_completed", Float32, self.display_area_explored)
-        rospy.Subscriber("/slam_toolbox/victim_markers", Marker, self.update_agent_tag_dict)
+        # rospy.Subscriber("/slam_toolbox/victim_markers", Marker, self.update_agent_tag_dict)
+        # initialize a subscriber for every agent_id/feedback/apriltag topic
+        self.elasped_time = 0
+        for agent in self.agent_status_dict:
+            if self.agent_active_status[agent]:
+                rospy.Subscriber(
+                    "/robosar_agent_bringup_node/" + agent + "/feedback/apriltag",
+                    AprilTagDetectionArray,
+                    lambda msg: self.update_agent_tag_dict(msg, agent),
+                )
 
         self.start_time = 0.0
-        self.elasped_time = 0
         self.start = False
         self.ui.start_mission_button.clicked.connect(self.send_mission)
         self.ui.e_stop_button.clicked.connect(self.send_estop)
@@ -99,25 +118,25 @@ class Ui(QtWidgets.QDialog):
     def display_area_explored(self, msg):
         self.percent_explored = round(msg.data, 2)
 
-    def update_agent_tag_dict(self, msg):
-        # Update dictionary
-        agent = msg.ns
-        if agent in self.agent_tag_dict:
-            if msg.id not in self.seen_tags:
-                self.seen_tags.add(msg.id)
-                self.agent_tag_dict[agent].append(msg.id)
-                self.life_scores.append(self.elasped_time)
-        else:
-            if msg.id not in self.seen_tags:
-                self.seen_tags.add(msg.id)
-                self.agent_tag_dict[agent] = [msg.id]
-                self.life_scores.append(self.elasped_time)
-        # Update statistics
-        self.tot_victims_found = len(self.seen_tags)
+    def update_agent_tag_dict(self, msg, agent_id):
         with self.lock:
-            if agent in self.agent_status_dict and agent in self.agent_tag_dict:
-                self.agent_status_dict[agent].num_victims_text = str(len(self.agent_tag_dict[agent]))
+            if agent_id in self.agent_tag_dict:
+                if msg.detections[0].id not in self.seen_tags:
+                    self.seen_tags.add(msg.detections[0].id)
+                    self.agent_tag_dict[agent_id].append(msg.detections[0].id)
+                    self.life_scores.append(self.elasped_time)
+            else:
+                if msg.detections[0].id not in self.seen_tags:
+                    self.seen_tags.add(msg.detections[0].id)
+                    self.agent_tag_dict[agent_id] = [msg.detections[0].id]
+                    self.life_scores.append(self.elasped_time)
+            # Update statistics
+            self.tot_victims_found = len(self.seen_tags)
 
+            if agent_id in self.agent_status_dict and agent_id in self.agent_tag_dict:
+                self.agent_status_dict[agent_id].num_victims_text = str(
+                    len(self.agent_tag_dict[agent_id])
+                )
 
     def display_task_allocation(self, msg):
         if msg:
@@ -126,8 +145,9 @@ class Ui(QtWidgets.QDialog):
                 data = br.imgmsg_to_cv2(msg, "rgb8")
                 height, width, _ = data.shape
                 bytesPerLine = 3 * width
-                qImg = QtGui.QImage(data.data, width, height,
-                                    bytesPerLine, QtGui.QImage.Format_RGB888)
+                qImg = QtGui.QImage(
+                    data.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888
+                )
                 pixmap = QtGui.QPixmap.fromImage(qImg)
                 self.ui.task_image.setPixmap(pixmap)
             except CvBridgeError as e:
@@ -136,7 +156,7 @@ class Ui(QtWidgets.QDialog):
     def show_time(self):
         if self.start:
             self.elasped_time += 1
-            mins = str(math.floor(self.elasped_time/60)).zfill(2)
+            mins = str(math.floor(self.elasped_time / 60)).zfill(2)
             secs = str(round(self.elasped_time % 60)).zfill(2)
             self.ui.mission_timer_label.setText("{}:{}".format(mins, secs))
         # update agent status viz
@@ -148,12 +168,16 @@ class Ui(QtWidgets.QDialog):
             agent_group.ip_label.setText(agent_group.ip_text)
             agent_group.victims_label.setText(agent_group.num_victims_text)
             if self.agent_active_status[agent]:
-                agent_group.group_box.setStyleSheet("QGroupBox {background-color: white;}")
+                agent_group.group_box.setStyleSheet(
+                    "QGroupBox {background-color: white;}"
+                )
             else:
-                agent_group.group_box.setStyleSheet("QGroupBox {background-color: grey;}")
+                agent_group.group_box.setStyleSheet(
+                    "QGroupBox {background-color: grey;}"
+                )
         self.ui.active_agents_label.setText(str(self.n_agents_active))
         self.ui.victims_found_label.setText(str(self.tot_victims_found))
-        self.ui.area_explored_label.setText(str(int(self.percent_explored*100)))
+        self.ui.area_explored_label.setText(str(int(self.percent_explored * 100)))
         self.ui.life_score_label.setText(str(sum(self.life_scores)))
 
     def send_mission(self):
@@ -195,10 +219,11 @@ class Ui(QtWidgets.QDialog):
 
     def get_active_agents(self, msg=None):
         print("Waiting for agent_status service ...")
-        rospy.wait_for_service('/robosar_agent_bringup_node/agent_status')
+        rospy.wait_for_service("/robosar_agent_bringup_node/agent_status")
         try:
             get_status = rospy.ServiceProxy(
-                '/robosar_agent_bringup_node/agent_status', agent_status)
+                "/robosar_agent_bringup_node/agent_status", agent_status
+            )
             resp1 = get_status()
             active_agents = resp1.agents_active
             for a in self.agent_active_status:
@@ -223,7 +248,8 @@ class Ui(QtWidgets.QDialog):
                 else:
                     agent_group = AgentGroup()
                     agent_group.group_box = QtWidgets.QGroupBox(
-                        self.ui.scrollAreaWidgetContents)
+                        self.ui.scrollAreaWidgetContents
+                    )
                     agent_group.group_box.setTitle(agent)
                     agent_group.group_box.setMinimumSize(QSize(300, 150))
                     layout = QtWidgets.QGridLayout()
@@ -237,12 +263,15 @@ class Ui(QtWidgets.QDialog):
                     layout.addWidget(agent_group.status_label, 0, 1)
                     layout.addWidget(QtWidgets.QLabel("Battery Level: "), 1, 0)
                     agent_group.battery_text = "0"
-                    agent_group.battery_label = QtWidgets.QLabel(agent_group.battery_text)
+                    agent_group.battery_label = QtWidgets.QLabel(
+                        agent_group.battery_text
+                    )
                     layout.addWidget(agent_group.battery_label, 1, 1)
-                    layout.addWidget(QtWidgets.QLabel(
-                        "Feedback Frequency: "), 2, 0)
+                    layout.addWidget(QtWidgets.QLabel("Feedback Frequency: "), 2, 0)
                     agent_group.feedback_text = "0"
-                    agent_group.feedback_label = QtWidgets.QLabel(agent_group.feedback_text)
+                    agent_group.feedback_label = QtWidgets.QLabel(
+                        agent_group.feedback_text
+                    )
                     layout.addWidget(agent_group.feedback_label, 2, 1)
                     layout.addWidget(QtWidgets.QLabel("IP: "), 3, 0)
                     agent_group.ip_text = "192.168.11.1"
@@ -250,13 +279,15 @@ class Ui(QtWidgets.QDialog):
                     layout.addWidget(agent_group.ip_label, 3, 1)
                     layout.addWidget(QtWidgets.QLabel("Victims found: "), 4, 0)
                     agent_group.num_victims_text = "0"
-                    agent_group.victims_label = QtWidgets.QLabel(agent_group.num_victims_text)
+                    agent_group.victims_label = QtWidgets.QLabel(
+                        agent_group.num_victims_text
+                    )
                     layout.addWidget(agent_group.victims_label, 4, 1)
 
                     self.agent_status_dict[agent] = agent_group
                     agent_group.group_box.setLayout(layout)
                     self.ui.verticalLayout.addWidget(agent_group.group_box)
-        
+
         self.ui.active_agents_label.setText(str(num_active))
 
     def display_agents_status(self, msg):
@@ -265,7 +296,7 @@ class Ui(QtWidgets.QDialog):
             agent = msg.robot_id[i]
             status = msg.status[i]
             splitted = status.split("_")
-            status_short = '_'.join(splitted[2:])
+            status_short = "_".join(splitted[2:])
 
             with self.lock:
                 if status in ALIVE:
