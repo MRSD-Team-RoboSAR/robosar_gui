@@ -16,6 +16,7 @@ import math
 import rospy
 from cv_bridge import CvBridge, CvBridgeError
 from PyQt5 import QtWidgets, QtGui
+from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import QTimer, QSize
 from std_msgs.msg import String, Bool, Float32
 from sensor_msgs.msg import Image
@@ -119,20 +120,28 @@ class Ui(QtWidgets.QDialog):
         self.percent_explored = round(msg.data, 2)
 
     def update_agent_tag_dict(self, msg, agent_id):
+        new_update = False
         with self.lock:
             if agent_id in self.agent_tag_dict:
                 if msg.detections[0].id not in self.seen_tags:
+                    new_update = True
                     self.seen_tags.add(msg.detections[0].id)
                     self.agent_tag_dict[agent_id].append(msg.detections[0].id)
                     self.life_scores.append(self.elasped_time)
             else:
                 if msg.detections[0].id not in self.seen_tags:
+                    new_update = True
                     self.seen_tags.add(msg.detections[0].id)
                     self.agent_tag_dict[agent_id] = [msg.detections[0].id]
                     self.life_scores.append(self.elasped_time)
             # Update statistics
             self.tot_victims_found = len(self.seen_tags)
 
+            if new_update:
+                # Set and unset background colour
+                self.setStyleSheet("background-color: rgb(100, 255, 100);")
+                rospy.sleep(1)  
+                self.setStyleSheet("background-color: white;")
             if agent_id in self.agent_status_dict and agent_id in self.agent_tag_dict:
                 self.agent_status_dict[agent_id].num_victims_text = str(
                     len(self.agent_tag_dict[agent_id])
