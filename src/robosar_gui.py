@@ -16,7 +16,6 @@ import math
 import rospy
 from cv_bridge import CvBridge, CvBridgeError
 from PyQt5 import QtWidgets, QtGui
-from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import QTimer, QSize
 from std_msgs.msg import String, Bool, Float32
 from sensor_msgs.msg import Image
