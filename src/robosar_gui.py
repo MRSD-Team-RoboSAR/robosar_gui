@@ -112,6 +112,7 @@ class Ui(QtWidgets.QDialog):
 
         self.mission_timer = QTimer(self)
         self.mission_timer.timeout.connect(self.show_time)
+        self.new_victim_detection = 0
 
         self.show()
 
@@ -122,11 +123,13 @@ class Ui(QtWidgets.QDialog):
         with self.lock:
             if agent_id in self.agent_tag_dict:
                 if msg.detections[0].id not in self.seen_tags:
+                    self.new_victim_detection = 1
                     self.seen_tags.add(msg.detections[0].id)
                     self.agent_tag_dict[agent_id].append(msg.detections[0].id)
                     self.life_scores.append(self.elasped_time)
             else:
                 if msg.detections[0].id not in self.seen_tags:
+                    self.new_victim_detection = 1
                     self.seen_tags.add(msg.detections[0].id)
                     self.agent_tag_dict[agent_id] = [msg.detections[0].id]
                     self.life_scores.append(self.elasped_time)
@@ -179,6 +182,17 @@ class Ui(QtWidgets.QDialog):
         self.ui.victims_found_label.setText(str(self.tot_victims_found))
         self.ui.area_explored_label.setText(str(int(self.percent_explored * 100)))
         self.ui.life_score_label.setText(str(sum(self.life_scores)))
+
+        # update background if victim update
+        if self.new_victim_detection==1:
+            # Set background colour
+            self.setStyleSheet("background-color: rgb(100, 255, 100);")
+            self.new_victim_detection = 2
+        elif self.new_victim_detection==2:
+            # Unset background colour
+            self.setStyleSheet("background-color: white;")
+            self.new_victim_detection = 0
+
 
     def send_mission(self):
         # publish start mission msg
