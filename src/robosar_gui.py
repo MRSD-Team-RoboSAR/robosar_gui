@@ -128,6 +128,7 @@ class Ui(QtWidgets.QDialog):
                     self.agent_tag_dict[agent_id].append(msg.detections[0].id)
                     self.life_scores.append(self.elasped_time)
             else:
+                print("agent_id not in agent_tag_dict:", agent_id)
                 if msg.detections[0].id not in self.seen_tags:
                     self.new_victim_detection = 1
                     self.seen_tags.add(msg.detections[0].id)
@@ -137,9 +138,7 @@ class Ui(QtWidgets.QDialog):
             self.tot_victims_found = len(self.seen_tags)
 
             if agent_id in self.agent_status_dict and agent_id in self.agent_tag_dict:
-                self.agent_status_dict[agent_id].num_victims_text = str(
-                    len(self.agent_tag_dict[agent_id])
-                )
+                self.agent_status_dict[agent_id].num_victims_text = str(len(self.agent_tag_dict[agent_id]))
 
     def display_task_allocation(self, msg):
         if msg:
@@ -186,7 +185,7 @@ class Ui(QtWidgets.QDialog):
         # update background if victim update
         if self.new_victim_detection==1:
             # Set background colour
-            self.setStyleSheet("background-color: rgb(100, 255, 100);")
+            self.setStyleSheet("background-color: rgb(100, 100, 255);")
             self.new_victim_detection = 2
         elif self.new_victim_detection==2:
             # Unset background colour
