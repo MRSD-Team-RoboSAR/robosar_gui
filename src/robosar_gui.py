@@ -185,7 +185,7 @@ class Ui(QtWidgets.QDialog):
         # update background if victim update
         if self.new_victim_detection==1:
             # Set background colour
-            self.setStyleSheet("background-color: rgb(100, 100, 255);")
+            self.setStyleSheet("background-color: rgb(100, 255, 100);")
             self.new_victim_detection = 2
         elif self.new_victim_detection==2:
             # Unset background colour
