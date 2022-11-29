@@ -96,8 +96,7 @@ class Ui(QtWidgets.QDialog):
             if self.agent_active_status[agent]:
                 rospy.Subscriber(
                     "/robosar_agent_bringup_node/" + agent + "/feedback/apriltag",
-                    AprilTagDetectionArray, self.update_agent_tag_dict(msg),
-                )
+                    AprilTagDetectionArray, self.update_agent_tag_dict)
 
         self.start_time = 0.0
         self.start = False
