@@ -118,7 +118,8 @@ class Ui(QtWidgets.QDialog):
         self.percent_explored = round(msg.data, 2)
 
     def update_agent_tag_dict(self, msg):
-        agent_id = msg.header.frame_id.split("/")
+        agent_id = msg.header.frame_id.split("/")[0]
+
         with self.lock:
             if agent_id in self.agent_tag_dict:
                 if msg.detections[0].id not in self.seen_tags:
