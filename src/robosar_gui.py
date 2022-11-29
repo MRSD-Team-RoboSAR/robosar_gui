@@ -128,7 +128,6 @@ class Ui(QtWidgets.QDialog):
                     self.agent_tag_dict[agent_id].append(msg.detections[0].id)
                     self.life_scores.append(self.elasped_time)
             else:
-                print("agent_id not in agent_tag_dict:", agent_id)
                 if msg.detections[0].id not in self.seen_tags:
                     self.new_victim_detection = 1
                     self.seen_tags.add(msg.detections[0].id)
