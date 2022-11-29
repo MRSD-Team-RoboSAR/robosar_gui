@@ -96,9 +96,7 @@ class Ui(QtWidgets.QDialog):
             if self.agent_active_status[agent]:
                 rospy.Subscriber(
                     "/robosar_agent_bringup_node/" + agent + "/feedback/apriltag",
-                    AprilTagDetectionArray,
-                    lambda msg: self.update_agent_tag_dict(msg, agent),
-                )
+                    AprilTagDetectionArray, self.update_agent_tag_dict)
 
         self.start_time = 0.0
         self.start = False
@@ -119,7 +117,9 @@ class Ui(QtWidgets.QDialog):
     def display_area_explored(self, msg):
         self.percent_explored = round(msg.data, 2)
 
-    def update_agent_tag_dict(self, msg, agent_id):
+    def update_agent_tag_dict(self, msg):
+        agent_id = msg.header.frame_id.split("/")[0]
+
         with self.lock:
             if agent_id in self.agent_tag_dict:
                 if msg.detections[0].id not in self.seen_tags:
@@ -137,9 +137,7 @@ class Ui(QtWidgets.QDialog):
             self.tot_victims_found = len(self.seen_tags)
 
             if agent_id in self.agent_status_dict and agent_id in self.agent_tag_dict:
-                self.agent_status_dict[agent_id].num_victims_text = str(
-                    len(self.agent_tag_dict[agent_id])
-                )
+                self.agent_status_dict[agent_id].num_victims_text = str(len(self.agent_tag_dict[agent_id]))
 
     def display_task_allocation(self, msg):
         if msg:
