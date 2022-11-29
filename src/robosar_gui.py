@@ -96,8 +96,7 @@ class Ui(QtWidgets.QDialog):
             if self.agent_active_status[agent]:
                 rospy.Subscriber(
                     "/robosar_agent_bringup_node/" + agent + "/feedback/apriltag",
-                    AprilTagDetectionArray,
-                    lambda msg: self.update_agent_tag_dict(msg, agent),
+                    AprilTagDetectionArray, self.update_agent_tag_dict(msg),
                 )
 
         self.start_time = 0.0
@@ -119,7 +118,8 @@ class Ui(QtWidgets.QDialog):
     def display_area_explored(self, msg):
         self.percent_explored = round(msg.data, 2)
 
-    def update_agent_tag_dict(self, msg, agent_id):
+    def update_agent_tag_dict(self, msg):
+        agent_id = msg.header.frame_id.split("/")
         with self.lock:
             if agent_id in self.agent_tag_dict:
                 if msg.detections[0].id not in self.seen_tags:
